@@ -1,0 +1,114 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "4a99bf5d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Tanesh A/L Pushpanathan (IS01080825)\n",
+    "\n",
+    "import re\n",
+    "import requests\n",
+    "from datetime import datetime\n",
+    "import csv"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "24a44a9e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def extract_reviews(url, pages=5, reviews_per_page=6):\n",
+    "    # Extract shop ID and item ID from the URL\n",
+    "    r = re.search(r'i\\.(\\d+)\\.(\\d+)', url)\n",
+    "    if r:\n",
+    "        shop_id, item_id = r.group(1), r.group(2)\n",
+    "    else:\n",
+    "        print(\"Invalid URL\")\n",
+    "        return\n",
+    "    \n",
+    "    # Create a list to store review data\n",
+    "    review_data = []\n",
+    "    \n",
+    "    # Iterate over the specified number of pages\n",
+    "    for page in range(1, pages + 1):\n",
+    "        offset = (page - 1) * reviews_per_page\n",
+    "        \n",
+    "        # Construct the reviews URL for the current page\n",
+    "        reviews_url = f'https://shopee.com.my/api/v2/item/get_ratings?filter=0&flag=1&itemid={22855111174}&limit={reviews_per_page}&offset={offset}&shopid={304504082}&type=0'\n",
+    "\n",
+    "        # Fetch reviews data from the Shopee API\n",
+    "        try:\n",
+    "            response = requests.get(reviews_url)\n",
+    "            data = response.json()\n",
+    "        except Exception as e:\n",
+    "            print(f\"Error fetching reviews data: {e}\")\n",
+    "            return\n",
+    "\n",
+    "        # Extract review data\n",
+    "        for review in data['data']['ratings']:\n",
+    "            reviewer_name = review['author_username']\n",
+    "            review_timestamp = review['ctime']\n",
+    "            review_date = datetime.fromtimestamp(review_timestamp).strftime('%Y-%m-%d')  # Convert Unix timestamp to human-readable date\n",
+    "            review_content = review['comment']\n",
+    "            \n",
+    "            # Remove sections related to \"Quality\" and \"Performance\" using regular expressions\n",
+    "            review_content = re.sub(r'(Quality|Performance):.*', '', review_content)\n",
+    "            \n",
+    "            # Append review data to the list\n",
+    "            review_data.append({\n",
+    "                'Reviewer Name': reviewer_name,\n",
+    "                'Review Date': review_date,\n",
+    "                'Review Content': review_content.strip()  # Strip leading/trailing whitespace\n",
+    "            })\n",
+    "\n",
+    "    # Write review data to CSV file\n",
+    "    with open('Shopee_reviews.csv', 'w', newline='', encoding='utf-8') as csvfile:\n",
+    "        fieldnames = ['Reviewer Name', 'Review Date', 'Review Content']\n",
+    "        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)\n",
+    "        \n",
+    "        writer.writeheader()  # Write CSV header\n",
+    "        writer.writerows(review_data)  # Write review data rows\n",
+    "\n",
+    "# Example URL\n",
+    "url = 'https://shopee.com.my/-Ready-Stock-Apple-iPhone-15-Pro-i.304504082.22855111174?xptdk=8bf18d61-d6bd-401e-bbda-8f504294705d'\n",
+    "\n",
+    "# Extract reviews data for the first 5 pages, each containing 6 reviews\n",
+    "extract_reviews(url, pages=5, reviews_per_page=6)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "728a978c",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
